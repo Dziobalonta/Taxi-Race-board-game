@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BoardGameSimulator</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4;}
+        #container { position: relative; display: inline-block; margin-top: 10px; }
+        #map-img { display: block; max-width: 100%; border: 2px solid #ccc; }
+        #overlay { position: absolute; top: 0; left: 0; }
+        .panel { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .controls { display: flex; align-items: center; gap: 15px; }
+        button { padding: 8px 15px; cursor: pointer; font-size: 1em; }
+        #roundCounter { font-weight: bold; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <div class="controls">
+            <button onclick="changeRound(-1)" id="btnPrev" disabled>Previous Round</button>
+            <span id="roundCounter">Round: 0 / 0</span>
+            <button onclick="changeRound(1)" id="btnNext" disabled>Next Round</button>
+        </div>
+    </div>
+
+    <div id="container">
+        <img id="map-img" src="./../imgs/96E85BA2-2664-4276-99D0-DE0FC954B9EF_indexjpg.jpg" alt="Map" onload="adjustSize()">
+        <canvas id="overlay"></canvas>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
