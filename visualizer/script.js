@@ -1,10 +1,10 @@
 // map coordinates
 const coordinates = {
-    1: {x: 80, y: 920},
-    2: {x: 130, y: 880},
-    3: {x: 180, y: 830},
-    4: {x: 230, y: 780},
-    5: {x: 280, y: 730}
+    1: {x: 804, y: 6841},
+    2: {x: 1007, y: 6500},
+    3: {x: 1228, y: 6208},
+    4: {x: 1467, y: 5979},
+    5: {x: 1679, y: 5795},
     
 };
 
@@ -15,12 +15,18 @@ const img = document.getElementById('map-img');
 let simulationData = []; 
 let currentRoundIndex = 0;
 
-function adjustSize() {
-    canvas.width = img.width;
-    canvas.height = img.height;
+window.addEventListener('resize', adjustSize);
 
-    loadCSV();
+function adjustSize() {
+    // Ustawiamy wewnętrzną rozdzielczość canvas na oryginalny rozmiar pliku JPG
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+
+    // Po zmianie rozmiaru trzeba odświeżyć rysowanie kropek
+    drawState(); 
 }
+
+loadCSV();
 
   // Auto loading the CSV file when the page is ready
 function loadCSV() {
@@ -73,23 +79,40 @@ function drawState() {
         let state = roadState[number - 1]; 
 
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 15, 0, 2 * Math.PI);
+        ctx.arc(point.x, point.y, 150, 0, 2 * Math.PI); // circle size
+        //  Stroke thickness
+        ctx.lineWidth = 15;
 
         if (state === 1) {
             ctx.fillStyle = "rgba(255, 255, 0, 0.6)"; // Yellow
-            ctx.fill();
             ctx.strokeStyle = "black";
-            ctx.stroke();
         } else if (state === 2) {
             ctx.fillStyle = "rgba(255, 0, 0, 0.6)"; // Red
-            ctx.fill();
             ctx.strokeStyle = "white";
-            ctx.stroke();
         } else {
             ctx.fillStyle = "rgba(0, 255, 0, 0.4)";  // Green
             ctx.fill();
             ctx.strokeStyle = "black";
             ctx.stroke();
         }
+
+            ctx.fill();
+            ctx.stroke();
     }
 }
+
+// Prints pixel image coordiantes of mouse click
+canvas.addEventListener('mousedown', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate the scale between the displayed size and the original (natural) size
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Get real pixel coordinates regardless of browser scaling
+    const x = Math.round((e.clientX - rect.left) * scaleX);
+    const y = Math.round((e.clientY - rect.top) * scaleY);
+    
+    // Print ready-to-copy line to the console
+    console.log(`{x: ${x}, y: ${y}},`);
+});
