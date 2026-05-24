@@ -33,6 +33,8 @@ struct PassengerCard {
 
 PassengerCard deck[PASSENGERS_AMOUNT];
 
+char trafficZones[ROAD_SIZE];
+
 void initPassengers() {
     int predefinedDestinations[PASSENGERS_AMOUNT] = {
         DESTINATIONS[0],  // Card 1
@@ -242,6 +244,37 @@ int calcFare(int distance) {
     return (int)total;
 }
 
+void setZoneFromList(const vector<int>& fields, char zone) {
+    for (size_t i = 0; i < fields.size(); i++) {
+        int fieldIndex = fields[i] - 1;
+        
+        // cannot be bigger than whole road
+        if (fieldIndex >= 0 && fieldIndex < ROAD_SIZE) {
+            trafficZones[fieldIndex] = zone;
+        }
+    }
+}
+
+void initZones() {
+    // if forgotten - be in zone A
+    for (int i = 0; i < ROAD_SIZE; i++) {
+        trafficZones[i] = 'A';
+    }
+
+    setZoneFromList({ 177, 176, 175, 174, 66, 65, 64, 63, 62, 61, 146, 145, 144, 143, 142, 141, 140, 28, 27, 26, 25, 24 }, 'A'); 
+    setZoneFromList({ 23, 22, 21, 20, 19, 18, 17, 16, 15, 67, 68, 139, 138, 137 }, 'B');
+    setZoneFromList({ 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 }, 'C');
+    setZoneFromList({ 136, 135, 134, 133, 132, 131, 130, 69, 70, 71, 72, 73, 74, 75, 76, 1 }, 'D');
+    setZoneFromList({ 129, 128, 127, 126, 125, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93 }, 'E');
+    setZoneFromList({ 96, 95, 94, 124, 123, 122, 121, 120, 173, 172, 171, 170, 169, 168 }, 'F');
+    setZoneFromList({ 167, 166, 165, 164, 163, 162, 161, 97, 98, 99, 100, 119, 118, 117, 116 }, 'G');
+    setZoneFromList({ 152, 153, 154, 155, 156, 157, 158, 159, 160, 113, 114, 115, 102, 101 }, 'H');
+    setZoneFromList({ 103, 104, 105, 106, 107, 108, 109, 110, 111, 112 }, 'I');
+    setZoneFromList({ 54, 55, 56, 57, 58, 59, 60, 147, 148, 149, 150, 151 }, 'J');
+    setZoneFromList({ 29, 30, 31, 32, 178, 179, 180, 53, 52, 51, 50, 49, 48, 47 }, 'K');
+    setZoneFromList({ 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 181, 182, 183, 184, 185 }, 'L');
+}
+
 void initGame() {
     for(int i = 0; i < ROAD_SIZE; i++) {
     // 0 - empty road,
@@ -307,7 +340,7 @@ void spawnPassengers(int currentRound) {
                  << " on field " << (spawnPos + 1)
                  << " (Dest: " << deck[randomCardIndex].destination << ")"
                  << " - Dst: " << dst
-                 << " | Fare: " << fare
+                 << " | Fare: " << fare << " zl"
                 << endl;
         }
     }
@@ -327,47 +360,135 @@ void spawnPlayers() {
     }
 }
 
-void updateTraffic(int currentRound) {
-    // TODO: Make traffic feel more natural, spawn in sectors, use intersections
+bool isJunction(int fieldIndex) {
+    return mapGraph[fieldIndex].size() > 2;
+}
 
+bool isNearJunction(int fieldIndex) {
+    // Look at all adjacent fields
+    for (size_t i = 0; i < mapGraph[fieldIndex].size(); i++) {
+        int neighbor = mapGraph[fieldIndex][i];
+        if (isJunction(neighbor)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int getNextTrafficState(int currentState, char zone) {
+    // protection from players and passengers
+    if (currentState > 2) currentState = 0; 
+
+    int chance = rand() % 100;
+    
+    switch (zone) {
+        case 'A': 
+        case 'B':
+        case 'G':
+        case 'H':
+            // High traffic areas
+            if (currentState == 0) return (chance < 40) ? 1 : 0;
+            if (currentState == 1) return (chance < 40) ? 2 : ((chance < 80) ? 1 : 0);
+            if (currentState == 2) return (chance < 80) ? 2 : 1;
+            break;
+
+        case 'D': 
+        case 'E':
+        case 'J':
+        case 'L':
+            // Medium traffic areas
+            if (currentState == 0) return (chance < 20) ? 1 : 0;       
+            if (currentState == 1) return (chance < 20) ? 2 : ((chance < 60) ? 1 : 0); 
+            if (currentState == 2) return (chance < 60) ? 2 : 1;
+            break;
+
+        case 'C':
+        case 'F':
+        case 'I':
+        case 'K':
+            // Almost No Traffic areas
+            if (currentState == 0) return (chance < 5) ? 1 : 0;
+            if (currentState == 1) return (chance < 10) ? 2 : ((chance < 40) ? 1 : 0);
+            if (currentState == 2) return (chance < 30) ? 2 : 1;
+            break;
+
+        default: // DEFAULT
+            if (currentState == 0) return (chance < 25) ? 1 : 0;
+            if (currentState == 1) return (chance < 25) ? 2 : ((chance < 60) ? 1 : 0);
+            if (currentState == 2) return (chance < 70) ? 2 : 1;
+            break;
+    }
+    
+    return 0; // if unresolved return no traffic
+}
+
+int getCurrentZoneState(char zone) {
+    for (int i = 0; i < ROAD_SIZE; i++) {
+        if (trafficZones[i] == zone && roadState[i] <= 2) {
+            return roadState[i];
+        }
+    }
+    return 0; // if unresolved return no traffic
+}
+
+void updateTraffic(int currentRound) {
 
     // Updating every 3 rounds
     if ((currentRound - 1) % 3 == 0) {
         
+        int newZoneState[256];
+        
+        // go through zones and set the traffic for every one of them
+        for (char i = 'A'; i <= 'L'; i++) {
+            // Special ROUND 1 logic - Generate immediate varied traffic
+            if (currentRound == 1) {
+                int chance = rand() % 100;
+                switch (i) {
+                    case 'A':
+                    case 'B':
+                    case 'G':
+                    case 'H': // High traffic areas
+                        newZoneState[i] = (chance < 25) ? 2 : ((chance < 75) ? 1 : 0);
+                        break;
+                    case 'D':
+                    case 'E':
+                    case 'J':
+                    case 'L': // Medium traffic areas
+                        newZoneState[i] = (chance < 10) ? 2 : ((chance < 45) ? 1 : 0);
+                        break;
+                    case 'C':
+                    case 'F':
+                    case 'I':
+                    case 'K': // Almost No traffic areas
+                        newZoneState[i] = (chance < 5) ? 2 : ((chance < 20) ? 1 : 0); break;
+                    default:
+                        newZoneState[i] = (chance < 15) ? 2 : ((chance < 50) ? 1 : 0); break;
+                }
+            } 
+            // Logic for the rest of the game - smoothly transition colors based on their previous state
+            else {
+                int currentState = getCurrentZoneState(i);
+                newZoneState[i] = getNextTrafficState(currentState, i); 
+            }
+        }
+
         for(int i = 0; i < ROAD_SIZE; i++) {
 
             if (roadState[i] == 3 && currentRound == 1) {
                 continue; // if players are spawning skip
             }
 
-            // random spawn chance for every field
-            int spawnChance = rand() % 100; 
-            
-            if(spawnChance < 20) {
-                roadState[i] = 2;      // 20% chance for a heavy traffic
-            } 
-            else if(spawnChance < 50) {
-                roadState[i] = 1;      // 30% chance for a slight traffic
-            } 
-            else {
-                roadState[i] = 0;     // 50% chance for an empty road
-            }
+            // Set the colors
+            char currentZone = trafficZones[i];
+            roadState[i] = newZoneState[currentZone];
         }
-    } else {
+    } 
+    else {
         for(int i = 0; i < ROAD_SIZE; i++) {
-            if (roadState[i] == 3 || roadState[i] == 4) {
-                // Overwrite spawn indicators
-                int spawnChance = rand() % 100; 
-                
-                if(spawnChance < 20) {
-                    roadState[i] = 2;
-                } 
-                else if(spawnChance < 50) {
-                    roadState[i] = 1;
-                } 
-                else {
-                    roadState[i] = 0;
-                }
+            if (roadState[i] == 4) {
+                // Overwrite spawn indicators with color from the zone
+                char currentZone = trafficZones[i];
+                roadState[i] = getCurrentZoneState(currentZone);
             }
         }
     }
@@ -408,6 +529,7 @@ int SaveRoadStateToFile() {
 int main() {
     srand(time(NULL)); 
     initGame();
+    initZones();
     initGraph();      
     printGraph();
     initPassengers();
