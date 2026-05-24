@@ -3,12 +3,15 @@
 #include <ctime>
 #include <fstream>
 #include <vector>
+#include <queue>
+#include <algorithm>
 
 using namespace std;
 
 const int PLAYERS_COUNT = 4;
 const int ROAD_SIZE = 185;
 const int PASSENGERS_AMOUNT = 21;
+vector<int> mapGraph[ROAD_SIZE];
 
 // index - index of a destination point(blue fields), value - index of the field on board
 const vector<int> DESTINATIONS = {
@@ -31,7 +34,7 @@ struct PassengerCard {
 PassengerCard deck[PASSENGERS_AMOUNT];
 
 void initPassengers() {
-int predefinedDestinations[PASSENGERS_AMOUNT] = {
+    int predefinedDestinations[PASSENGERS_AMOUNT] = {
         DESTINATIONS[0],  // Card 1
         DESTINATIONS[1],  // Card 2
         DESTINATIONS[2],  // Card 3
@@ -49,10 +52,10 @@ int predefinedDestinations[PASSENGERS_AMOUNT] = {
         DESTINATIONS[14], // Card 15
         DESTINATIONS[15], // Card 16
         DESTINATIONS[16], // Card 17
-        DESTINATIONS[0],  // Card 18 (duplicate)
-        DESTINATIONS[1],  // Card 19 (duplicate)
-        DESTINATIONS[2],  // Card 20 (duplicate)
-        DESTINATIONS[3]   // Card 21 (duplicate)
+        DESTINATIONS[17], // Card 18
+        DESTINATIONS[0],  // Card 19 (duplicate)
+        DESTINATIONS[1],  // Card 20 (duplicate)
+        DESTINATIONS[2]   // Card 21 (duplicate)
     };
 
     for(int i = 0; i < PASSENGERS_AMOUNT; i++) {
@@ -62,12 +65,192 @@ int predefinedDestinations[PASSENGERS_AMOUNT] = {
     }
 }
 
+// Helper, adds two way connections - can create intersetions
+void addTwoWay(int a, int b) {
+    mapGraph[a - 1].push_back(b - 1);
+    mapGraph[b - 1].push_back(a - 1);
+}
 
-// GAME LOGIC
+// Helper, adds long paths of fields
+void addSequence(int start, int end) {
+    for (int i = start; i < end; i++) {
+        addTwoWay(i, i + 1);
+    }
+}
+
+void initGraph() {
+
+    addSequence(1, 65);
+    addSequence(66, 67);
+    addSequence(68, 125);
+    addSequence(126, 126);
+    addSequence(127, 128);
+    addSequence(129, 131);
+    addSequence(132, 137);
+    addSequence(138, 140);
+    addSequence(141, 149);
+    addSequence(150, 155);
+    addSequence(156, 163);
+    addSequence(164, 166);
+    addSequence(167, 174);
+    addSequence(175, 176);
+    addSequence(177, 181);
+    addSequence(182, 185);
+
+
+    addTwoWay(16, 137);
+    addTwoWay(16, 138);
+    
+    addTwoWay(19, 67);
+    addTwoWay(19, 68);
+
+    addTwoWay(25, 65);
+    addTwoWay(25, 66);
+
+    addTwoWay(27, 141);
+    addTwoWay(27, 140);
+
+    addTwoWay(34, 185);
+
+    addTwoWay(45, 182);
+    addTwoWay(45, 181);
+
+    addTwoWay(57, 150);
+    addTwoWay(57, 149);
+
+    addTwoWay(63, 175);
+    addTwoWay(63, 174);
+
+    addTwoWay(72, 131);
+    addTwoWay(72, 132);
+
+    addTwoWay(80, 128);
+    addTwoWay(80, 129);
+
+    addTwoWay(86, 126);
+    addTwoWay(86, 127);
+
+    addTwoWay(92, 125);
+    addTwoWay(92, 126);
+
+    addTwoWay(98, 166);
+    addTwoWay(98, 167);
+
+    addTwoWay(114, 156);
+    addTwoWay(114, 155);
+
+    addTwoWay(118, 163);
+    addTwoWay(118, 164);
+
+    addTwoWay(135, 1);
+
+    addTwoWay(145, 177);
+    addTwoWay(145, 176);
+
+    addTwoWay(153, 102);
+    addTwoWay(153, 101);
+}
+
+void printGraph() {
+    cout << "--- VERIFYING MAP CONNECTIONS ---" << endl;
+    
+    for (int i = 0; i < ROAD_SIZE; i++) {
+
+        cout << "Field " << (i + 1) << " connects to: [ ";
+        
+        // Loop through all connections for this specific field
+        for (size_t j = 0; j < mapGraph[i].size(); j++) {
+            
+            // Add 1 to the neighbor's index to match the physical map
+            cout << (mapGraph[i][j] + 1); 
+            
+            // Add a comma between numbers but not after the last one
+            if (j < mapGraph[i].size() - 1) {
+                cout << ", ";
+            }
+        }
+        cout << " ]" << endl;
+    }
+    cout << "---------------------------------" << endl;
+}
+
+// BFS for calculating the shortest path to destination point
+// used to calcualte the taxi rate
+// using 0-based indices (0 to 184)
+vector<int> findShortestPath(int startIndex, int destinationIndex) {
+
+    vector<int> parent(ROAD_SIZE, -1); // Keeps track of where we came from
+    vector<bool> visited(ROAD_SIZE, false); // Keeps track of already checked fields 
+    queue<int> q; // The BFS queue
+
+    // 2. Start the BFS with the beginning field
+    q.push(startIndex);
+    visited[startIndex] = true;
+
+    bool found = false;
+
+    // Run the search
+    while (!q.empty()) {
+        int current = q.front();
+        q.pop();
+
+        // If reached the destination, stop searching
+        if (current == destinationIndex) {
+            found = true;
+            break; 
+        }
+
+        // Check all neighboring fields
+        for (size_t i = 0; i < mapGraph[current].size(); i++) {
+            int neighbor = mapGraph[current][i];
+
+            if (!visited[neighbor]) {
+                visited[neighbor] = true;
+                parent[neighbor] = current;
+                q.push(neighbor);
+            }
+        }
+    }
+
+    // Flip the path
+    vector<int> path;
+    if (found) {
+        int step = destinationIndex;
+        while (step != -1) {
+            path.push_back(step);
+            step = parent[step];
+        }
+        // The path is currently backwards (Destination -> Start)
+        reverse(path.begin(), path.end());
+    }
+
+    // Returns the path, empty if no path exists (on this board a path always exists)
+    return path;
+}
+
+
+int calcFare(int distance) {
+    //  Base Fare + (Distance x Rate Per Field)
+
+    if (distance <= 0) return 0;
+
+    float baseFare = 2.0f;
+    float ratePerField = 0.5f;
+
+    float total = baseFare + (distance * ratePerField);
+
+    return (int)total;
+}
+
 void initGame() {
     for(int i = 0; i < ROAD_SIZE; i++) {
-        roadState[i] = 0; // 0 - empty road, 1 - slight traffic, 2 - heavy traffic, 3 - Player's Spawn Point, 4 - Passenger's Spawn Point
-    } 
+    // 0 - empty road,
+    // 1 - slight traffic
+    // 2 - heavy traffic
+    // 3 - Player's spawn point
+    // 4 - Passenger's spawn point
+        roadState[i] = 0;
+    }
 }
 
 void spawnPassengers(int currentRound) {
@@ -113,11 +296,19 @@ void spawnPassengers(int currentRound) {
             roadState[spawnPos] = 4; // Mark spawned passenger on board
             deck[randomCardIndex].inPlay = true; // card out of the deck
             
+            vector<int> path = findShortestPath(spawnPos, deck[randomCardIndex].destination);
+            int dst = path.size();
+
+            int fare = calcFare(dst);
+
             // Print
             cout << "[ROUND " << currentRound << "] Spawned card " 
                  << deck[randomCardIndex].cardID 
                  << " on field " << (spawnPos + 1)
-                 << " (Dest: " << deck[randomCardIndex].destination << ")" << endl;
+                 << " (Dest: " << deck[randomCardIndex].destination << ")"
+                 << " - Dst: " << dst
+                 << " | Fare: " << fare
+                << endl;
         }
     }
 }
@@ -217,6 +408,8 @@ int SaveRoadStateToFile() {
 int main() {
     srand(time(NULL)); 
     initGame();
+    initGraph();      
+    printGraph();
     initPassengers();
     
     SaveRoadStateToFile();
