@@ -205,28 +205,47 @@ function adjustSize() {
     drawState(); 
 }
 
-loadCSV();
+// Start polling immediately when the page loads
+pollCSV();
+setInterval(pollCSV, 1000); // Check the file every 1000ms (1 second)
 
-  // Auto loading the CSV file when the page is ready
-function loadCSV() {
-    fetch('./../simulation.csv')
+function pollCSV() {
+    // We add a timestamp (?t=...) so the browser doesn't load a cached, old version of the CSV!
+    fetch('./../BoardState.csv?t=' + new Date().getTime())
         .then(response => {
             if (!response.ok) {
-                throw new Error("Cannot find simulation.csv!");
+                throw new Error("Cannot find BoardState.csv!");
             }
             return response.text();
         })
         .then(text => {
             const lines = text.split('\n').filter(line => line.trim() !== '');
-            simulationData = lines.map(line => line.split(',').map(Number));
             
-            currentRoundIndex = 0;
-            updateUI();
-            drawState();
+            // Only update the game if C++ generated a NEW round
+            if (lines.length > simulationData.length) {
+                
+                // SMART TRACKING: Check if the user is currently looking at the most recent round
+                // (We must do this before updating simulationData)
+                let isViewingLatest = false;
+                if (simulationData.length === 0 || currentRoundIndex === simulationData.length - 1) {
+                    isViewingLatest = true;
+                }
+                
+                // Update our data with the new rounds
+                simulationData = lines.map(line => line.split(',').map(Number));
+                
+                // If they were on the latest round, automatically jump to the new latest round!
+                if (isViewingLatest) {
+                    currentRoundIndex = simulationData.length - 1;
+                }
+                
+                // Refresh the screen
+                updateUI();
+                drawState();
+            }
         })
         .catch(error => {
-            console.error(error);
-            alert("Error loading simulation.csv! Are you running a local server?");
+            console.error("Waiting for BoardState.csv to be generated...");
         });
 }
 
@@ -254,13 +273,13 @@ function drawState() {
     const roadState = simulationData[currentRoundIndex];
 
     for (let number in coordinates) {
-        let point = coordinates[number];
+        let point = { x: coordinates[number].x * 0.5, y: coordinates[number].y * 0.5 };
         let state = roadState[number-1]; 
 
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 150, 0, 2 * Math.PI); // circle size
+        ctx.arc(point.x, point.y, 80, 0, 2 * Math.PI); // circle size
         //  Stroke thickness
-        ctx.lineWidth = 15;
+        ctx.lineWidth = 10;
 
         if (state === 1) {
             ctx.fillStyle = "rgba(255, 255, 0, 0.6)"; // Yellow

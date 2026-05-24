@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <algorithm>
+#include <conio.h>
 
 using namespace std;
 
@@ -173,7 +174,6 @@ void printGraph() {
         }
         cout << " ]" << endl;
     }
-    cout << "---------------------------------" << endl;
 }
 
 // BFS for calculating the shortest path to destination point
@@ -335,7 +335,8 @@ void spawnPassengers(int currentRound) {
             int fare = calcFare(dst);
 
             // Print
-            cout << "[ROUND " << currentRound << "] Spawned card " 
+            // cout << "[ROUND " << currentRound << "] Spawned card "
+            cout << "Spawned card " 
                  << deck[randomCardIndex].cardID 
                  << " on field " << (spawnPos + 1)
                  << " (Dest: " << deck[randomCardIndex].destination << ")"
@@ -460,9 +461,11 @@ void updateTraffic(int currentRound) {
                     case 'F':
                     case 'I':
                     case 'K': // Almost No traffic areas
-                        newZoneState[i] = (chance < 5) ? 2 : ((chance < 20) ? 1 : 0); break;
+                        newZoneState[i] = (chance < 5) ? 2 : ((chance < 20) ? 1 : 0);
+                        break;
                     default:
-                        newZoneState[i] = (chance < 15) ? 2 : ((chance < 50) ? 1 : 0); break;
+                        newZoneState[i] = (chance < 15) ? 2 : ((chance < 50) ? 1 : 0);
+                        break;
                 }
             } 
             // Logic for the rest of the game - smoothly transition colors based on their previous state
@@ -485,7 +488,7 @@ void updateTraffic(int currentRound) {
     } 
     else {
         for(int i = 0; i < ROAD_SIZE; i++) {
-            if (roadState[i] == 4) {
+            if (roadState[i] == 4 || roadState[i] == 3) {
                 // Overwrite spawn indicators with color from the zone
                 char currentZone = trafficZones[i];
                 roadState[i] = getCurrentZoneState(currentZone);
@@ -496,34 +499,26 @@ void updateTraffic(int currentRound) {
 
 // TESTING ONLY
 int SaveRoadStateToFile() {
-    // Create and open the CSV file
-    ofstream outFile("simulation.csv");
+    // 'app' mode appends to the end of the file instead of overwriting it
+    ofstream outFile("BoardState.csv", ios::app); 
+    
+    for(int i = 0; i < ROAD_SIZE; i++) {
+        outFile << roadState[i];
+        if (i < ROAD_SIZE - 1) outFile << ","; 
+    }
+    outFile << "\n"; 
+    
+    outFile.close();
+
+    return 0;
+}
+
+void initCSV() {
+    ofstream outFile("BoardState.csv", ios::trunc); // 'trunc' deletes old content
     if (!outFile.is_open()) {
         cout << "Error: Could not create simulation.csv file!" << endl;
-        return 1;
     }
-
-    int totalRounds = 50; // How many rounds to simulate
-    cout << "Generating " << totalRounds << " rounds to simulation.csv..." << endl;
-
-    for(int currentRound = 1; currentRound <= totalRounds; currentRound++) {
-
-        if (currentRound == 1) {
-            spawnPlayers();
-        }
-        updateTraffic(currentRound);
-        spawnPassengers(currentRound);
-        
-        // Write the current road state to the file, separated by commas
-        for(int i = 0; i < ROAD_SIZE; i++) {
-            outFile << roadState[i];
-            if (i < ROAD_SIZE - 1) outFile << ","; // Don't add comma after the last number
-        }
-        outFile << "\n"; // Next round goes to a new line
-    }
-
     outFile.close();
-    return 0;
 }
 
 int main() {
@@ -531,11 +526,72 @@ int main() {
     initGame();
     initZones();
     initGraph();      
-    printGraph();
+    // printGraph();
     initPassengers();
-    
+    initCSV();
+
+    int currentRound = 1;
+    bool gameRunning = true;
+
+    system("cls");
+
+    cout << "--- GAME STARTED ---" << endl;
+    cout << "----- ROUND 1 -----" << endl;
+    cout << "Open your HTML Visualizer now. It will update as you play." << endl;
+    cout << "--------------------" << endl;
+    cout << endl;
+
+    // First Round Setup
+    spawnPlayers();
+    updateTraffic(currentRound);
+    spawnPassengers(currentRound);
     SaveRoadStateToFile();
-    cout << "Done! You can now load simulation.csv into the HTML visualizer." << endl;
+
+    cout << endl;   
+    cout << "--------------------" << endl;
+    cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
+
+    // THE CLI MENU
+    while (gameRunning) {
+        // _getch() waits for ANY key press and immediately moves forward
+        char key = _getch(); 
+
+        // 1. QUIT GAME
+        if (key == 'q' || key == 'Q') { 
+            gameRunning = false;
+            cout << "\nEnding game..." << endl;
+        } 
+        // 2. NEXT ROUND (Space is 32 or ' ', Enter is 13)
+        else if (key == ' ' || key == 13) { 
+            currentRound++;
+
+            system("cls");
+
+            cout << "--- GAME RUNNING ---" << endl;
+            cout << "----- ROUND " << currentRound <<" -----" << endl;
+            cout << endl;
+            
+            
+            // Advance the game logic
+            updateTraffic(currentRound);
+            spawnPassengers(currentRound);
+            
+            // Save the new state
+            SaveRoadStateToFile();
+
+            cout << endl;
+            cout << "--------------------" << endl;
+            cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
+        } 
+        // 3. EXAMPLE OF ADDING MORE COMMANDS LATER
+        else if (key == 'p' || key == 'P') {
+            cout << "\nYou pressed P! Later, you can put 'pick up passenger' logic here." << endl;
+        }
+        else if (key == 'h' || key == 'H') {
+            cout << "\nHELP: Press Space for next round, Q to quit." << endl;
+        }
+        // If they press an unmapped key, the loop just ignores it and waits for the next press
+    }
     
     return 0;
 }
