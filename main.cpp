@@ -553,15 +553,15 @@ int main() {
 
     // THE CLI MENU
     while (gameRunning) {
-        // _getch() waits for ANY key press and immediately moves forward
+        // waits for ANY key press and immediately moves forward
         char key = _getch(); 
 
-        // 1. QUIT GAME
+        // QUIT GAME
         if (key == 'q' || key == 'Q') { 
             gameRunning = false;
             cout << "\nEnding game..." << endl;
         } 
-        // 2. NEXT ROUND (Space is 32 or ' ', Enter is 13)
+        // NEXT ROUND (Space is 32 or ' ', Enter is 13)
         else if (key == ' ' || key == 13) { 
             currentRound++;
 
@@ -582,15 +582,7 @@ int main() {
             cout << endl;
             cout << "--------------------" << endl;
             cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
-        } 
-        // 3. EXAMPLE OF ADDING MORE COMMANDS LATER
-        else if (key == 'p' || key == 'P') {
-            cout << "\nYou pressed P! Later, you can put 'pick up passenger' logic here." << endl;
         }
-        else if (key == 'h' || key == 'H') {
-            cout << "\nHELP: Press Space for next round, Q to quit." << endl;
-        }
-        // If they press an unmapped key, the loop just ignores it and waits for the next press
     }
     
     return 0;
