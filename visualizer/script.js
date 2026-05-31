@@ -28,12 +28,12 @@ const coordinates = {
     26: {x: 3960, y: 3859},
     27: {x: 3620, y: 3719},
     28: {x: 3380, y: 3612},
-    29: {x: 3049, y: 3587},
-    30: {x: 2800, y: 3488},
-    31: {x: 2585, y: 3298},
-    32: {x: 2543, y: 2993},
-    33: {x: 2510, y: 2721},
-    34: {x: 2336, y: 2507},
+    29: {x: 3272, y: 3356},
+    30: {x: 3272, y: 3018},
+    31: {x: 3114, y: 2746},
+    32: {x: 2874, y: 2622},
+    33: {x: 2576, y: 2540},
+    34: {x: 2320, y: 2456},
     35: {x: 1930, y: 2391},
     36: {x: 1574, y: 2366},
     37: {x: 1226, y: 2259},
@@ -73,7 +73,7 @@ const coordinates = {
     71: {x: 4440, y: 5937},
     72: {x: 4482, y: 6217},
     73: {x: 4581, y: 6489},
-    74: {x: 4623, y: 6737},
+    74: {x: 4673, y: 6837},
     75: {x: 5053, y: 6860},
     76: {x: 5401, y: 6803},
     77: {x: 5783, y: 6712},
@@ -97,8 +97,8 @@ const coordinates = {
     95: {x: 7613, y: 4354},
     96: {x: 7613, y: 3991},
     97: {x: 7688, y: 3669},
-    98: {x: 7787, y: 3290},
-    99: {x: 7796, y: 3059},
+    98: {x: 7787, y: 3330},
+    99: {x: 7796, y: 2979},
     100: {x: 7741, y: 2540},
     101: {x: 7531, y: 2160},
     102: {x: 7124, y: 1538},
@@ -152,7 +152,7 @@ const coordinates = {
     150: {x: 6192, y: 1545},
     151: {x: 6546, y: 1636},
     152: {x: 6888, y: 1748},
-    153: {x: 7242, y: 1807},
+    153: {x: 7342, y: 1807},
     154: {x: 7741, y: 1879},
     155: {x: 8142, y: 1918},
     156: {x: 8799, y: 1774},
@@ -170,8 +170,8 @@ const coordinates = {
     168: {x: 6947, y: 3490},
     169: {x: 6494, y: 3536},
     170: {x: 6139, y: 3654},
-    171: {x: 5831, y: 3654},
-    172: {x: 5397, y: 3516},
+    171: {x: 5801, y: 3654},
+    172: {x: 5457, y: 3516},
     173: {x: 5168, y: 3372},
     174: {x: 4885, y: 3248},
     175: {x: 4557, y: 2684},
@@ -181,10 +181,16 @@ const coordinates = {
     179: {x: 3671, y: 1492},
     180: {x: 3336, y: 1328},
     181: {x: 3034, y: 1217},
-    182: {x: 2686, y: 1348},
-    183: {x: 2686, y: 1689},
-    184: {x: 2640, y: 2042},
-    185: {x: 2489, y: 2278},
+    182: {x: 2734, y: 1442},
+    183: {x: 2766, y: 1872},
+    184: {x: 2650, y: 2250},
+    185: {x: 2460, y: 2786},
+    186: {x: 2352, y: 3084},
+    187: {x: 2204, y: 3406},
+    188: {x: 2062, y: 3726},
+    189: {x: 2170, y: 3974},
+    190: {x: 2460, y: 4090},
+    191: {x: 2800, y: 4180},
 };
 
 const canvas = document.getElementById('overlay');
@@ -311,7 +317,10 @@ function drawState() {
 
             ctx.fillStyle = "black";
             ctx.font = "60px Arial";
-            ctx.fillText(number, point.x - 20, point.y + 15);
+
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(number, point.x, point.y);
     }
 }
 
@@ -324,8 +333,11 @@ canvas.addEventListener('mousedown', function(e) {
     const scaleY = canvas.height / rect.height;
     
     // Get real pixel coordinates regardless of browser scaling
-    const x = Math.round((e.clientX - rect.left) * scaleX);
-    const y = Math.round((e.clientY - rect.top) * scaleY);
+    let x = Math.round((e.clientX - rect.left) * scaleX);
+    let y = Math.round((e.clientY - rect.top) * scaleY);
+
+     x = x * 2;
+     y = y * 2;
     
     // Print ready-to-copy line to the console
     console.log(`{x: ${x}, y: ${y}},`);

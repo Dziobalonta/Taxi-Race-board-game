@@ -10,7 +10,7 @@
 using namespace std;
 
 const int PLAYERS_COUNT = 4;
-const int ROAD_SIZE = 185;
+const int ROAD_SIZE = 191;
 const int PASSENGERS_AMOUNT = 21;
 vector<int> mapGraph[ROAD_SIZE];
 
@@ -74,6 +74,10 @@ void addTwoWay(int a, int b) {
     mapGraph[b - 1].push_back(a - 1);
 }
 
+void addOneWay(int from, int to) {
+    mapGraph[from - 1].push_back(to - 1);
+}
+
 // Helper, adds long paths of fields
 void addSequence(int start, int end) {
     for (int i = start; i < end; i++) {
@@ -81,11 +85,35 @@ void addSequence(int start, int end) {
     }
 }
 
+void removeOneWay(int from, int to) {
+    // find a connection in vector
+    auto it = find(mapGraph[from - 1].begin(), mapGraph[from - 1].end(), to - 1);
+    
+    // if found remove it
+    if (it != mapGraph[from - 1].end()) {
+        mapGraph[from - 1].erase(it);
+    }
+}
+
+void makeOneWay(int start, int end) {
+
+    if(start <= end){
+        for (int i = start; i < end; i++) {
+            removeOneWay(i, i + 1);
+        }
+    } else {
+        for (int i = start; i > end; i--) {
+            removeOneWay(i, i - 1);
+        }
+    }
+}
+
 void initGraph() {
 
     addSequence(1, 65);
     addSequence(66, 67);
-    addSequence(68, 125);
+    addSequence(68, 101);
+    addSequence(102, 125);
     addSequence(126, 126);
     addSequence(127, 128);
     addSequence(129, 131);
@@ -98,22 +126,29 @@ void initGraph() {
     addSequence(167, 174);
     addSequence(175, 176);
     addSequence(177, 181);
-    addSequence(182, 185);
+    addSequence(182, 184);
+    addSequence(185, 191);
+
+    makeOneWay(68, 72);
+    makeOneWay(141, 145);
+    makeOneWay(98, 92);
+    makeOneWay(98, 101);
 
 
     addTwoWay(16, 137);
     addTwoWay(16, 138);
     
     addTwoWay(19, 67);
-    addTwoWay(19, 68);
+    addOneWay(68, 19);
 
     addTwoWay(25, 65);
     addTwoWay(25, 66);
 
-    addTwoWay(27, 141);
     addTwoWay(27, 140);
+    addOneWay(141, 27);
 
-    addTwoWay(34, 185);
+    addTwoWay(33, 184);
+    addTwoWay(33, 185);
 
     addTwoWay(45, 182);
     addTwoWay(45, 181);
@@ -147,11 +182,13 @@ void initGraph() {
 
     addTwoWay(135, 1);
 
+    addTwoWay(139, 191);
+
     addTwoWay(145, 177);
     addTwoWay(145, 176);
 
     addTwoWay(153, 102);
-    addTwoWay(153, 101);
+    addOneWay(153, 101);
 }
 
 void printGraph() {
@@ -262,7 +299,7 @@ void initZones() {
     }
 
     setZoneFromList({ 177, 176, 175, 174, 66, 65, 64, 63, 62, 61, 146, 145, 144, 143, 142, 141, 140, 28, 27, 26, 25, 24 }, 'A'); 
-    setZoneFromList({ 23, 22, 21, 20, 19, 18, 17, 16, 15, 67, 68, 139, 138, 137 }, 'B');
+    setZoneFromList({ 23, 22, 21, 20, 19, 18, 17, 16, 15, 67, 68, 139, 138, 137, 191 }, 'B');
     setZoneFromList({ 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 }, 'C');
     setZoneFromList({ 136, 135, 134, 133, 132, 131, 130, 69, 70, 71, 72, 73, 74, 75, 76, 1 }, 'D');
     setZoneFromList({ 129, 128, 127, 126, 125, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93 }, 'E');
@@ -271,8 +308,8 @@ void initZones() {
     setZoneFromList({ 152, 153, 154, 155, 156, 157, 158, 159, 160, 113, 114, 115, 102, 101 }, 'H');
     setZoneFromList({ 103, 104, 105, 106, 107, 108, 109, 110, 111, 112 }, 'I');
     setZoneFromList({ 54, 55, 56, 57, 58, 59, 60, 147, 148, 149, 150, 151 }, 'J');
-    setZoneFromList({ 29, 30, 31, 32, 178, 179, 180, 53, 52, 51, 50, 49, 48, 47 }, 'K');
-    setZoneFromList({ 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 181, 182, 183, 184, 185 }, 'L');
+    setZoneFromList({ 29, 30, 31, 178, 179, 180, 53, 52, 51, 50, 49, 48, 47, 186, 187, 188, 189, 190 }, 'K');
+    setZoneFromList({ 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 181, 182, 183, 184, 185 }, 'L');
 }
 
 void initGame() {
@@ -525,7 +562,7 @@ int main() {
     srand(time(NULL)); 
     initGame();
     initZones();
-    initGraph();      
+    initGraph();     
     // printGraph();
     initPassengers();
     initCSV();
