@@ -303,6 +303,11 @@ function drawState() {
             ctx.fill();
             ctx.strokeStyle = "white";
             ctx.stroke();
+        }else if(state == 5){
+            ctx.fillStyle = "rgba(136, 136, 136, 0.45)";  // Black
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.stroke();
         }else {
             ctx.fillStyle = "rgba(0, 255, 0, 0.4)";  // Green
             ctx.fill();

@@ -36,6 +36,13 @@ PassengerCard deck[PASSENGERS_AMOUNT];
 
 char trafficZones[ROAD_SIZE];
 
+struct Barrier {
+    int fieldIndex;
+    int roundsLeft;
+};
+
+vector<Barrier> activeBarriers;
+
 void initPassengers() {
     int predefinedDestinations[PASSENGERS_AMOUNT] = {
         DESTINATIONS[0],  // Card 1
@@ -243,7 +250,7 @@ vector<int> findShortestPath(int startIndex, int destinationIndex) {
         for (size_t i = 0; i < mapGraph[current].size(); i++) {
             int neighbor = mapGraph[current][i];
 
-            if (!visited[neighbor]) {
+            if (!visited[neighbor] && roadState[neighbor] != 5) {
                 visited[neighbor] = true;
                 parent[neighbor] = current;
                 q.push(neighbor);
@@ -314,11 +321,12 @@ void initZones() {
 
 void initGame() {
     for(int i = 0; i < ROAD_SIZE; i++) {
-    // 0 - empty road,
+    // 0 - empty road
     // 1 - slight traffic
     // 2 - heavy traffic
     // 3 - Player's spawn point
     // 4 - Passenger's spawn point
+    // 5 - Temporary Barrier
         roadState[i] = 0;
     }
 }
@@ -514,6 +522,10 @@ void updateTraffic(int currentRound) {
 
         for(int i = 0; i < ROAD_SIZE; i++) {
 
+            if (roadState[i] == 5) {
+                continue; // dont overwrite the barrier
+            }
+
             if (roadState[i] == 3 && currentRound == 1) {
                 continue; // if players are spawning skip
             }
@@ -530,6 +542,23 @@ void updateTraffic(int currentRound) {
                 char currentZone = trafficZones[i];
                 roadState[i] = getCurrentZoneState(currentZone);
             }
+        }
+    }
+}
+
+void updateBarriers() {
+    for (auto it = activeBarriers.begin(); it != activeBarriers.end(); ) {
+        it->roundsLeft--; // rounds lifespan counter update
+        
+        if (it->roundsLeft <= 0) {
+            // end of lifespan
+            char zone = trafficZones[it->fieldIndex];
+            roadState[it->fieldIndex] = getCurrentZoneState(zone);
+            it = activeBarriers.erase(it); 
+        } else {
+            // preventing the cover up by traffic
+            roadState[it->fieldIndex] = 5;
+            ++it;
         }
     }
 }
@@ -588,38 +617,67 @@ int main() {
     cout << "--------------------" << endl;
     cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
 
-    // THE CLI MENU
+// THE CLI MENU
     while (gameRunning) {
-        // waits for ANY key press and immediately moves forward
-        char key = _getch(); 
+
+        cout << "\n> Place a barrier? \n(Type field number + [ENTER] or [SPACE] to skip): ";
+        char key = _getch(); // Catches the first key press
 
         // QUIT GAME
         if (key == 'q' || key == 'Q') { 
             gameRunning = false;
             cout << "\nEnding game..." << endl;
-        } 
-        // NEXT ROUND (Space is 32 or ' ', Enter is 13)
-        else if (key == ' ' || key == 13) { 
-            currentRound++;
-
-            system("cls");
-
-            cout << "--- GAME RUNNING ---" << endl;
-            cout << "----- ROUND " << currentRound <<" -----" << endl;
-            cout << endl;
-            
-            
-            // Advance the game logic
-            updateTraffic(currentRound);
-            spawnPassengers(currentRound);
-            
-            // Save the new state
-            SaveRoadStateToFile();
-
-            cout << endl;
-            cout << "--------------------" << endl;
-            cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
+            break;
         }
+
+        int barrierField = -1;
+
+        // checking input
+        if (key == ' ') {
+            // Space - skip
+        } 
+        else if (key >= '0' && key <= '9') {
+            cout << key; // Print the first pressed digit
+            string rest;
+            getline(cin, rest); // Read the remaining digits until Enter is pressed
+            
+            try {
+                barrierField = stoi(string(1, key) + rest);
+                if (barrierField < 1 || barrierField > ROAD_SIZE) {
+                    cout << "> Invalid field number! Skipping barrier." << endl;
+                    barrierField = -1;
+                }
+            } catch (...) {
+                cout << "> Input error! Skipping." << endl;
+                barrierField = -1;
+            }
+        } 
+        else {
+            cout << "\n> Unrecognized key. Skipping barrier." << endl;
+        }
+
+        // advance to the next round
+        currentRound++;
+        system("cls");
+
+        cout << "--- GAME RUNNING ---" << endl;
+        cout << "----- ROUND " << currentRound <<" -----" << endl;
+        cout << endl;
+
+        // Remove expired roadblocks
+        updateBarriers();
+
+        // If a valid number was provided - place a new roadblock for 3 rounds
+        if (barrierField != -1) {
+            activeBarriers.push_back({barrierField - 1, 3});
+            roadState[barrierField - 1] = 5;
+            cout << "[!] Barrier placed on field " << barrierField << " for 3 rounds!\n" << endl;
+        }
+
+        updateTraffic(currentRound);
+        spawnPassengers(currentRound);
+        
+        SaveRoadStateToFile();
     }
     
     return 0;
