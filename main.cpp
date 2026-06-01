@@ -40,8 +40,13 @@ struct Barrier {
     int fieldIndex;
     int roundsLeft;
 };
-
 vector<Barrier> activeBarriers;
+
+struct ActiveEvent {
+    int eventID;
+    int roundsLeft;
+};
+vector<ActiveEvent> currentEvents;
 
 void initPassengers() {
     int predefinedDestinations[PASSENGERS_AMOUNT] = {
@@ -381,7 +386,7 @@ void spawnPassengers(int currentRound) {
 
             // Print
             // cout << "[ROUND " << currentRound << "] Spawned card "
-            cout << "Spawned card " 
+            cout << " [!] Spawned card " 
                  << deck[randomCardIndex].cardID 
                  << " on field " << (spawnPos + 1)
                  << " (Dest: " << deck[randomCardIndex].destination << ")"
@@ -477,6 +482,142 @@ int getCurrentZoneState(char zone) {
     return 0; // if unresolved return no traffic
 }
 
+bool isZoneLockedByEvent(char zone, int& forcedColor) {
+    for (auto& ev : currentEvents) {
+        if (ev.eventID == 1 && (zone == 'C' || zone == 'D' || zone == 'B')) { // Football match
+            forcedColor = 2; // change to red/heavy traffic
+            return true;
+        }
+         if (ev.eventID == 2 && (zone == 'K' || zone == 'A' || zone == 'B')) { // Mass
+            forcedColor = 2; // change to red/heavy traffic
+            return true;
+        }
+         if (ev.eventID == 3 && (zone == 'L')) { // Railway strike
+            forcedColor = 2; // change to red/heavy traffic
+            return true;
+        }
+         if (ev.eventID == 4 && (zone == 'E' || zone == 'D')) { // School
+            forcedColor = 2; // change to red/heavy traffic
+            return true;
+        }
+         if (ev.eventID == 5 && (zone == 'I' || zone == 'H')) { // Concert
+            forcedColor = 2; // change to red/heavy traffic
+            return true;
+        }
+    }
+    return false;
+}
+
+void activateEvent(int id) {
+    if (id == 1) { // Football match
+        currentEvents.push_back({1, 4}); // ID 1, 3 rounds
+        
+        // changing traffic
+        for(int i = 0; i < ROAD_SIZE; i++) {
+            char z = trafficZones[i];
+            if (z == 'C' || z == 'D' || z == 'B') {
+                // Paint over roads, protecting barriers, passengers and players
+                if (roadState[i] <= 2) { 
+                    roadState[i] = 2;
+                }
+            }
+        }
+        cout << "\n[!] End of a football match! Zones C, D, B in heavy traffic for 3 rounds!" << endl;
+    }
+    if (id == 2) { // Mass
+        currentEvents.push_back({2, 4}); // ID 2, 3 rounds
+        
+        // changing traffic
+        for(int i = 0; i < ROAD_SIZE; i++) {
+            char z = trafficZones[i];
+            if (z == 'K' || z == 'A' || z == 'B') {
+                // Paint over roads, protecting barriers, passengers and players
+                if (roadState[i] <= 2) { 
+                    roadState[i] = 2;
+                }
+            }
+        }
+        cout << "\n[!] Bells are ringing - Mass will begin shortly! Zones K, A, B in heavy traffic for 3 rounds!" << endl;
+    }
+    if (id == 3) { // Railway strike
+        currentEvents.push_back({3, 4}); // ID 3, 3 rounds
+        
+        // changing traffic
+        for(int i = 0; i < ROAD_SIZE; i++) {
+            char z = trafficZones[i];
+            if (z == 'L') {
+                // Paint over roads, protecting barriers, passengers and players
+                if (roadState[i] <= 2) { 
+                    roadState[i] = 2;
+                }
+            }
+        }
+        cout << "\n[!] Railway workers are underpaid - Today is a day of a strike! Zones L in heavy traffic for 3 rounds!" << endl;
+    }
+    if (id == 4) { // School
+        currentEvents.push_back({3, 4}); // ID 4, 3 rounds
+        
+        // changing traffic
+        for(int i = 0; i < ROAD_SIZE; i++) {
+            char z = trafficZones[i];
+            if (z == 'E' || z =='D') {
+                // Paint over roads, protecting barriers, passengers and players
+                if (roadState[i] <= 2) { 
+                    roadState[i] = 2;
+                }
+            }
+        }
+        cout << "\n[!] Today is the First day of school! Zones E, D in heavy traffic for 3 rounds!" << endl;
+    }
+    if (id == 5) { // Concert
+        currentEvents.push_back({5, 4}); // ID 4, 3 rounds
+        
+        // changing traffic
+        for(int i = 0; i < ROAD_SIZE; i++) {
+            char z = trafficZones[i];
+            if (z == 'I' || z =='H') {
+                // Paint over roads, protecting barriers, passengers and players
+                if (roadState[i] <= 2) { 
+                    roadState[i] = 2;
+                }
+            }
+        }
+        cout << "\n[!] Taylor Swift is performing live at the city's biggest stadium! Zones I, H in heavy traffic for 3 rounds!" << endl;
+    }
+}
+
+// Updating the events' lifespans
+void updateEvents() {
+    for (auto it = currentEvents.begin(); it != currentEvents.end(); ) {
+        it->roundsLeft--;
+        
+        if (it->roundsLeft <= 0) {
+            cout << "\n[!] Event (ID: " << it->eventID << ") has ended. Traffic comes back to normal." << endl;
+            
+            // manual change of traffic
+            for(int i = 0; i < ROAD_SIZE; i++) {
+                char z = trafficZones[i];
+                bool shouldClear = false;
+
+                // check what zones are involved
+                if (it->eventID == 1 && (z == 'C' || z == 'D' || z == 'B')) shouldClear = true;
+                if (it->eventID == 2 && (z == 'K' || z == 'A' || z == 'B')) shouldClear = true;
+                if (it->eventID == 3 && (z == 'L')) shouldClear = true;
+                if (it->eventID == 4 && (z == 'E' || z == 'D')) shouldClear = true;
+                if (it->eventID == 5 && (z == 'I' || z == 'H')) shouldClear = true;
+
+                // change red to green
+                if (shouldClear && roadState[i] <= 2) {
+                    roadState[i] = 0; 
+                }
+            }
+            it = currentEvents.erase(it); 
+        } else {
+            ++it;
+        }
+    }
+}
+
 void updateTraffic(int currentRound) {
 
     // Updating every 3 rounds
@@ -515,8 +656,16 @@ void updateTraffic(int currentRound) {
             } 
             // Logic for the rest of the game - smoothly transition colors based on their previous state
             else {
-                int currentState = getCurrentZoneState(i);
-                newZoneState[i] = getNextTrafficState(currentState, i); 
+                int forcedColor = 0;
+                // if locked by traffic keep the color
+                if (isZoneLockedByEvent(i, forcedColor)) {
+                    newZoneState[i] = forcedColor;
+                } 
+                // else calculate normal traffic
+                else {
+                    int currentState = getCurrentZoneState(i);
+                    newZoneState[i] = getNextTrafficState(currentState, i); 
+                } 
             }
         }
 
@@ -554,7 +703,9 @@ void updateBarriers() {
             // end of lifespan
             char zone = trafficZones[it->fieldIndex];
             roadState[it->fieldIndex] = getCurrentZoneState(zone);
-            it = activeBarriers.erase(it); 
+            it = activeBarriers.erase(it);
+            cout << "[!] Barrier on field " << it->fieldIndex + 1 << " is down!" << endl;
+
         } else {
             // preventing the cover up by traffic
             roadState[it->fieldIndex] = 5;
@@ -604,6 +755,9 @@ int main() {
     cout << "--- GAME STARTED ---" << endl;
     cout << "----- ROUND 1 -----" << endl;
     cout << "Open your HTML Visualizer now. It will update as you play." << endl;
+
+    cout << endl;   
+    cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
     cout << "--------------------" << endl;
     cout << endl;
 
@@ -613,13 +767,32 @@ int main() {
     spawnPassengers(currentRound);
     SaveRoadStateToFile();
 
-    cout << endl;   
-    cout << "--------------------" << endl;
-    cout << "Press [SPACE] or [ENTER] for next round, [Q] to quit." << endl;
-
-// THE CLI MENU
+    // THE CLI MENU
     while (gameRunning) {
+        cout << "\n--------------------" << endl;
+        // EVENTS
+        cout << "What event has been activated?" << endl;
+        cout << "[1] End of a football match" << endl;
+        cout << "[2] Mass in the church" << endl;
+        cout << "[3] Railway workers' strike" << endl;
+        cout << "[4] First day of school" << endl;
+        cout << "[5] Concert of a world-famous artist at the stadium" << endl;
 
+        cout << "[SPACE] Skip" << endl;
+        cout << "> Select event (1-5 or [SPACE]): ";
+
+        char eventKey = _getch();
+        if (eventKey >= '1' && eventKey <= '5') {
+            int eventID = eventKey - '0'; // conversion
+            activateEvent(eventID);
+        } else if (eventKey == 'q' || eventKey == 'Q') {
+            gameRunning = false;
+            break;
+        } else {
+            cout << "\n> No Events this round..." << endl;
+        }
+
+        // BARRIERS
         cout << "\n> Place a barrier? \n(Type field number + [ENTER] or [SPACE] to skip): ";
         char key = _getch(); // Catches the first key press
 
@@ -656,7 +829,7 @@ int main() {
             cout << "\n> Unrecognized key. Skipping barrier." << endl;
         }
 
-        // advance to the next round
+        // NEW ROUND
         currentRound++;
         system("cls");
 
@@ -664,7 +837,8 @@ int main() {
         cout << "----- ROUND " << currentRound <<" -----" << endl;
         cout << endl;
 
-        // Remove expired roadblocks
+        // Remove outdated things from map
+        updateEvents();
         updateBarriers();
 
         // If a valid number was provided - place a new roadblock for 3 rounds
