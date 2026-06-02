@@ -12,6 +12,9 @@ using namespace std;
 const int PLAYERS_COUNT = 4;
 const int ROAD_SIZE = 191;
 const int PASSENGERS_AMOUNT = 21;
+
+bool useArduino = false;
+
 vector<int> mapGraph[ROAD_SIZE];
 
 // index - index of a destination point(blue fields), value - index of the field on board
@@ -714,6 +717,23 @@ void updateBarriers() {
     }
 }
 
+void sendToArduino() {
+    // Check in the Arduino IDE which COM port your Arduino is using!
+    // The format for ports above COM9 is e.g., "\\\\.\\COM10", for lower ones "COM3" is enough
+    ofstream arduino("COM3"); 
+    
+    if (arduino.is_open()) {
+        // Iterate through all 12 zones (A-L)
+        for (char z = 'A'; z <= 'L'; z++) {
+            int state = getCurrentZoneState(z); // Get the current traffic state in the zone
+            arduino << state; // Send the digit to Arduino (e.g., '2')
+        }
+        arduino.close(); // Close the connection
+    } else {
+        cout << "[!] Cannot connect to Arduino on port COM3!" << endl;
+    }
+}
+
 // TESTING ONLY
 int SaveRoadStateToFile() {
     // 'app' mode appends to the end of the file instead of overwriting it
@@ -852,6 +872,10 @@ int main() {
         spawnPassengers(currentRound);
         
         SaveRoadStateToFile();
+
+        if(useArduino){
+            sendToArduino();
+        }
     }
     
     return 0;

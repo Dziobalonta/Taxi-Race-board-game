@@ -67,21 +67,31 @@ void setup() {
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(127); // Jasność ustawiona na 50%
 
-    // 1. "REST GREEN" - Najpierw ustawiamy CAŁY pasek na zielono (strefy C, D, E, I, L oraz wolne piksele)
-    fill_solid(leds, NUM_LEDS, CRGB::Green);
+    // Otwarcie kanału komunikacji z komputerem przez USB (baudrate: 9600)
+    Serial.begin(9600);
 
-    // 2. "STREFA A i G RED" - Nadpisujemy strefy A i G kolorem czerwonym
-    colorZone(STREFA_A, CRGB::Red);
-
-    // 3. "STREFA H, J, K, F, B ORANGE" - Nadpisujemy wybrane strefy kolorem pomarańczowym
-    CRGB orangeColor = CRGB(255, 68, 0); // Głęboki pomarańcz (wygląda najlepiej na diodach WS2812B)
-    colorZone(STREFA_B, orangeColor);
-    colorZone(STREFA_K, orangeColor);
-
+    fill_solid(leds, NUM_LEDS, CRGB::Green); // fail-safe color
     // Wysłanie gotowych stanów do kontrolera paska
     FastLED.show();
 }
 
 void loop() {
-    // Pętla pozostaje pusta
+    if (Serial.available() >= 12) { // Czekamy na równe 12 znaków (strefy A-L)
+        
+        for (int i = 0; i < 12; i++) {
+            char incomingByte = Serial.read(); // Czytamy jedną cyfrę
+            int trafficState = incomingByte - '0'; // Zamiana '0' na liczbę 0
+            
+            // Zamiana cyfry na kolor (0=Zielony, 1=Żółty, 2=Czerwony)
+            CRGB newColor = CRGB::Green;
+            if (trafficState == 1) newColor = CRGB::Yellow;
+            if (trafficState == 2) newColor = CRGB::Red;
+            
+            // Kolorujemy strefę (i to numer strefy: 0=A, 1=B, itd.)
+            colorZone((Zone)i, newColor);
+        }
+        
+        // Wyświetlamy nowe kolory na pasku LED
+        FastLED.show();
+    }
 }
