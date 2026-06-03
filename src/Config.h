@@ -4,7 +4,7 @@
 
 const int PLAYERS_COUNT = 4;
 const int ROAD_SIZE = 191;
-const int PASSENGERS_AMOUNT = 21;
+const int PASSENGERS_AMOUNT = 44;
 
 struct PassengerCard {
     int cardID;

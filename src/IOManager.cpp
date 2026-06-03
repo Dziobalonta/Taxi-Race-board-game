@@ -33,7 +33,7 @@ int SaveRoadStateToFile() {
 void sendToArduino() {
     // Check in the Arduino IDE which COM port your Arduino is using!
     // The format for ports above COM9 is e.g., "\\\\.\\COM10", for lower ones "COM3" is enough
-    ofstream arduino("COM3"); 
+    ofstream arduino("COM5");
     
     if (arduino.is_open()) {
         // Iterate through all 12 zones (A-L)
@@ -43,6 +43,6 @@ void sendToArduino() {
         }
         arduino.close(); // Close the connection
     } else {
-        cout << "[!] Cannot connect to Arduino on port COM3!" << endl;
+        cout << "[!] Cannot connect to Arduino on port COM5!" << endl;
     }
 }

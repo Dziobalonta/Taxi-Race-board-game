@@ -1,6 +1,6 @@
 #include "Config.h"
 
-bool useArduino = false;
+bool useArduino = true;
 
 std::vector<int> mapGraph[ROAD_SIZE];
 

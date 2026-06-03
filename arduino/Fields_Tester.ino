@@ -1,17 +1,17 @@
 #include <FastLED.h>
 
 #define LED_PIN     6          // Zmień na numer pinu, do którego podpięty jest pasek
-#define NUM_LEDS    234        // Całkowita liczba LED-ów na pasku (zaktualizowana do Twojej mapy)
-#define LED_TYPE    WS2812B    // Zmień typ, jeśli masz np. WS2811 lub SK6812
-#define COLOR_ORDER GRB        // Kolejność kolorów (najczęściej GRB dla WS2812B)
+#define NUM_LEDS    234        // Całkowita liczba LED-ów na pasku
+#define LED_TYPE    WS2812B    // Typ paska
+#define COLOR_ORDER GRB        // Kolejność kolorów
 
 CRGB leds[NUM_LEDS];
 
-// --- Definicje stref (kolekcje LED-ów zaktualizowane przez Ciebie) ---
+// --- Definicje stref ---
 const uint8_t ledsA[] = {178,179, 180, 181,192, 193, 194, 209,210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223,228, 229, 230, 231, 232, 233};
 const uint8_t ledsB[] = {13, 14, 15, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 224,225, 226, 227};
 const uint8_t ledsC[] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-const uint8_t ledsD[] = {1, 2, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 147,148, 149, 150, 151, 152};
+ uint8_t ledsD[] = {1, 2, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 147,148, 149, 150, 151, 152};
 const uint8_t ledsE[] = {130,131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 153,154, 155, 156, 157, 158, 159, 160, 161, 162, 163};
 const uint8_t ledsF[] = {125,126, 127, 128, 129, 164,165, 166, 171,172, 173, 174, 175, 176, 177};
 const uint8_t ledsG[] = {99, 100, 101, 102, 103, 114,115, 116, 117, 118, 119, 120, 121, 122, 123, 124,167, 168, 169, 170};
@@ -63,36 +63,23 @@ void colorZone(Zone zone, CRGB color) {
 }
 
 void setup() {
-// Inicjalizacja paska LED
+    // Inicjalizacja paska LED
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(190); // Jasność ustawiona na 50%
+    FastLED.setBrightness(127); // Jasność ustawiona na 50%
 
-    // Otwarcie kanału komunikacji z komputerem przez USB (baudrate: 9600)
-    Serial.begin(9600);
+    // Najpierw czyścimy pasek (tło np. wyłączone lub zielone)
+    fill_solid(leds, NUM_LEDS, CRGB(0,0,0)); 
 
-    fill_solid(leds, NUM_LEDS, CRGB::Green); // fail-safe color
+    for(int i=0; i < 234; i++){
+      leds[i] = CRGB(255,255,255);
+      delay(3000);
+      leds[i] = CRGB(0,0,0);
+    }
+
     // Wysłanie gotowych stanów do kontrolera paska
     FastLED.show();
 }
 
 void loop() {
-    if (Serial.available() >= 12) { // Czekamy na równe 12 znaków (strefy A-L)
-        
-        for (int i = 0; i < 12; i++) {
-            char incomingByte = Serial.read(); // Czytamy jedną cyfrę
-            int trafficState = incomingByte - '0'; // Zamiana '0' na liczbę 0
-            
-            // Zamiana cyfry na kolor (0=Zielony, 1=Żółty, 2=Czerwony)
-            CRGB newColor = CRGB::Green;
-            if (trafficState == 1) newColor = CRGB::Yellow;
-            if (trafficState == 2) newColor = CRGB::Red;
-            
-            // Kolorujemy strefę (i to numer strefy: 0=A, 1=B, itd.)
-            colorZone((Zone)i, newColor);
-            Serial.print( incomingByte + "\n");
-        }
-        
-        // Wyświetlamy nowe kolory na pasku LED
-        FastLED.show();
-    }
+    // Pętla pozostaje pusta na czas testów
 }
