@@ -1,13 +1,13 @@
 #include <FastLED.h>
 
 #define LED_PIN     6          // Zmień na numer pinu, do którego podpięty jest pasek
-#define NUM_LEDS    234        // Całkowita liczba LED-ów na pasku (zaktualizowana do Twojej mapy)
+#define NUM_LEDS    234        // Całkowita liczba LED-ów na pasku
 #define LED_TYPE    WS2812B    // Zmień typ, jeśli masz np. WS2811 lub SK6812
 #define COLOR_ORDER GRB        // Kolejność kolorów (najczęściej GRB dla WS2812B)
 
 CRGB leds[NUM_LEDS];
 
-// --- Definicje stref (kolekcje LED-ów zaktualizowane przez Ciebie) ---
+// --- Definicje stref (kolekcje LED-ów) ---
 const uint8_t ledsA[] = {178,179, 180, 181,192, 193, 194, 209,210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223,228, 229, 230, 231, 232, 233};
 const uint8_t ledsB[] = {13, 14, 15, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 224,225, 226, 227};
 const uint8_t ledsC[] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
@@ -20,6 +20,14 @@ const uint8_t ledsI[] = {79,80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90};
 const uint8_t ledsJ[] = {67, 68, 69, 70, 71,182, 183, 184, 185, 186, 187, 188, 189, 190, 191};
 const uint8_t ledsK[] = {36, 37, 38, 39, 59,60, 61, 62, 63, 64, 65, 66, 195,196, 197, 206,207, 208};
 const uint8_t ledsL[] = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58,198, 199, 200, 201, 202, 203, 204, 205};
+
+// --- BARDZO WAŻNE: Definicja struktury pól ---
+#define MAX_LEDS_PER_FIELD 4 
+
+struct Field {
+    uint8_t count;
+    uint8_t leds[MAX_LEDS_PER_FIELD];
+};
 
 // Tworzymy główną tablicę ze wszystkimi 191 polami
 const Field boardFields[191] = {
@@ -170,7 +178,52 @@ const Field boardFields[191] = {
     {0, {}},                   // Pole 145
     {1, {192}},                // Pole 146
     {0, {}},                   // Pole 147
-}
+    {1, {190}},                // Pole 148
+    {1, {188}},                // Pole 149
+    {1, {71}},                 // Pole 150
+    {1, {72}},                 // Pole 151
+    {2, {73, 74}},             // Pole 152
+    {1, {76}},                 // Pole 153
+    {1, {108}},                // Pole 154
+    {1, {107}},                // Pole 155
+    {0, {}},                   // Pole 156
+    {1, {96}},                 // Pole 157
+    {1, {97}},                 // Pole 158
+    {2, {97, 98}},             // Pole 159
+    {1, {98}},                 // Pole 160
+    {2, {99, 100}},            // Pole 161
+    {0, {}},                   // Pole 162
+    {0, {}},                   // Pole 163
+    {1, {122}},                // Pole 164
+    {1, {121}},                // Pole 165
+    {0, {}},                   // Pole 166
+    {0, {}},                   // Pole 167
+    {1, {170}},                // Pole 168
+    {2, {171, 172}},           // Pole 169
+    {1, {173}},                // Pole 170
+    {2, {174, 175}},           // Pole 171
+    {1, {176}},                // Pole 172
+    {1, {177}},                // Pole 173
+    {1, {178}},                // Pole 174
+    {1, {217}},                // Pole 175
+    {0, {}},                   // Pole 176
+    {1, {194}},                // Pole 177
+    {0, {}},                   // Pole 178
+    {1, {196}},                // Pole 179
+    {1, {197}},                // Pole 180
+    {0, {}},                   // Pole 181
+    {0, {}},                   // Pole 182
+    {2, {201, 202}},           // Pole 183
+    {1, {203}},                // Pole 184
+    {2, {40, 41}},             // Pole 185
+    {1, {39}},                 // Pole 186
+    {1, {38}},                 // Pole 187
+    {1, {37}},                 // Pole 188
+    {1, {36}},                 // Pole 189
+    {1, {35}},                 // Pole 190
+    {1, {34}}                  // Pole 191
+};
+
 // Typ wyliczeniowy (Enum)
 enum Zone {
     STREFA_A, STREFA_B, STREFA_C, STREFA_D, STREFA_E, STREFA_F,
@@ -213,7 +266,7 @@ void colorZone(Zone zone, CRGB color) {
 }
 
 void setup() {
-// Inicjalizacja paska LED
+    // Inicjalizacja paska LED
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(190); // Jasność ustawiona na 50%
 
@@ -268,9 +321,6 @@ void loop() {
                 }
                 
                 // >>> TUTAJ DZIEJE SIĘ TWOJE "SKIP GDY ZERO" <<<
-                // Jeśli shouldColor jest 'true' (stan 3, 4 lub 5), to zmieniamy kolory diod.
-                // Jeśli stan to 0 (lub 1, lub 2), shouldColor wynosi 'false' i pętla omija ten fragment.
-                // Dzięki temu na diodach pozostaje kolor strefy namalowany wyżej!
                 if (shouldColor) {
                     for (int j = 0; j < boardFields[i].count; j++) {
                         int ledIndex = boardFields[i].leds[j] - 1; // Konwersja na indeks od 0
