@@ -41,6 +41,14 @@ void sendToArduino() {
             int state = getCurrentZoneState(z); // Get the current traffic state in the zone
             arduino << state; // Send the digit to Arduino (e.g., '2')
         }
+
+        for (int i = 0; i < ROAD_SIZE; i++)
+        {
+            arduino << roadState[i];
+        }
+        // char that tells to stop reading
+        arduino << '\n';
+        
         arduino.close(); // Close the connection
     } else {
         cout << "[!] Cannot connect to Arduino on port COM5!" << endl;
