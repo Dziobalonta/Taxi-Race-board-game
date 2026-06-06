@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #ifndef _WIN32
     #include <fcntl.h>
@@ -12,6 +13,222 @@
 #endif
 
 using namespace std;
+
+// LED map: board field (1-191) -> physical LED index(es) on the strip.
+// Moved here from the Arduino sketch so the board only receives final LED
+// indices and no longer needs the table itself.
+struct FieldLeds {
+    int count;
+    int leds[3]; // a field maps to at most 3 LEDs
+};
+
+static const FieldLeds boardFields[ROAD_SIZE] = {
+    {1, {1}},                  // Pole 1
+    {1, {2}},                  // Pole 2
+    {1, {3}},                  // Pole 3
+    {1, {4}},                  // Pole 4
+    {1, {5}},                  // Pole 5
+    {1, {6}},                  // Pole 6
+    {1, {7}},                  // Pole 7
+    {1, {7}},                  // Pole 8
+    {1, {8}},                  // Pole 9
+    {1, {9}},                  // Pole 10
+    {1, {9}},                  // Pole 11
+    {1, {10}},                 // Pole 12
+    {1, {12}},                 // Pole 13
+    {1, {13}},                 // Pole 14
+    {1, {14}},                 // Pole 15
+    {0, {}},                   // Pole 16
+    {1, {30}},                 // Pole 17
+    {2, {28, 29}},             // Pole 18
+    {0, {}},                   // Pole 19
+    {0, {}},                   // Pole 20
+    {0, {}},                   // Pole 21
+    {1, {225}},                // Pole 22
+    {1, {225}},                // Pole 23
+    {0, {}},                   // Pole 24
+    {1, {223}},                // Pole 25
+    {1, {230}},                // Pole 26
+    {0, {}},                   // Pole 27
+    {2, {209, 210}},           // Pole 28
+    {1, {208}},                // Pole 29
+    {1, {207}},                // Pole 30
+    {1, {206}},                // Pole 31
+    {1, {205}},                // Pole 32
+    {0, {}},                   // Pole 33
+    {0, {}},                   // Pole 34
+    {1, {44}},                 // Pole 35
+    {1, {45}},                 // Pole 36
+    {2, {46, 47}},             // Pole 37
+    {1, {48}},                 // Pole 38
+    {1, {49}},                 // Pole 39
+    {1, {49}},                 // Pole 40
+    {1, {50}},                 // Pole 41
+    {2, {51, 52}},             // Pole 42
+    {1, {53}},                 // Pole 43
+    {1, {54}},                 // Pole 44
+    {2, {55, 56}},             // Pole 45
+    {1, {57}},                 // Pole 46
+    {0, {}},                   // Pole 47
+    {2, {59, 60}},             // Pole 48
+    {0, {}},                   // Pole 49
+    {2, {61, 62}},             // Pole 50
+    {0, {}},                   // Pole 51
+    {0, {}},                   // Pole 52
+    {0, {}},                   // Pole 53
+    {1, {66}},                 // Pole 54
+    {0, {}},                   // Pole 55
+    {0, {}},                   // Pole 56
+    {0, {}},                   // Pole 57
+    {1, {186}},                // Pole 58
+    {2, {183, 184}},           // Pole 59
+    {1, {182}},                // Pole 60
+    {1, {181}},                // Pole 61
+    {1, {180}},                // Pole 62
+    {0, {}},                   // Pole 63
+    {0, {}},                   // Pole 64
+    {1, {221}},                // Pole 65
+    {1, {228}},                // Pole 66
+    {0, {}},                   // Pole 67
+    {2, {26, 27}},             // Pole 68
+    {1, {25}},                 // Pole 69
+    {1, {24}},                 // Pole 70
+    {1, {23}},                 // Pole 71
+    {0, {}},                   // Pole 72
+    {1, {149}},                // Pole 73
+    {1, {149}},                // Pole 74
+    {1, {148}},                // Pole 75
+    {1, {147}},                // Pole 76
+    {1, {146}},                // Pole 77
+    {1, {145}},                // Pole 78
+    {1, {144}},                // Pole 79
+    {0, {}},                   // Pole 80
+    {1, {155}},                // Pole 81
+    {1, {156}},                // Pole 82
+    {1, {157}},                // Pole 83
+    {2, {158, 159}},           // Pole 84
+    {0, {}},                   // Pole 85
+    {1, {137}},                // Pole 86
+    {1, {136}},                // Pole 87
+    {1, {135}},                // Pole 88
+    {1, {135}},                // Pole 89
+    {1, {134}},                // Pole 90
+    {1, {134}},                // Pole 91
+    {1, {132}},                // Pole 92
+    {0, {}},                   // Pole 93
+    {2, {163, 164}},           // Pole 94
+    {2, {165, 166}},           // Pole 95
+    {0, {}},                   // Pole 96
+    {0, {}},                   // Pole 97
+    {0, {}},                   // Pole 98
+    {2, {114, 115}},           // Pole 99
+    {1, {113}},                // Pole 100
+    {1, {112}},                // Pole 101
+    {1, {77}},                 // Pole 102
+    {0, {}},                   // Pole 103
+    {1, {80}},                 // Pole 104
+    {2, {81, 82}},             // Pole 105
+    {0, {}},                   // Pole 106
+    {1, {84}},                 // Pole 107
+    {1, {85}},                 // Pole 108
+    {1, {86}},                 // Pole 109
+    {1, {87}},                 // Pole 110
+    {0, {}},                   // Pole 111
+    {1, {90}},                 // Pole 112
+    {2, {91, 92}},             // Pole 113
+    {1, {93}},                 // Pole 114
+    {3, {104, 105, 106}},      // Pole 115
+    {1, {103}},                // Pole 116
+    {1, {102}},                // Pole 117
+    {0, {}},                   // Pole 118
+    {1, {123}},                // Pole 119
+    {1, {124}},                // Pole 120
+    {1, {125}},                // Pole 121
+    {1, {127}},                // Pole 122
+    {1, {128}},                // Pole 123
+    {0, {}},                   // Pole 124
+    {0, {}},                   // Pole 125
+    {0, {}},                   // Pole 126
+    {1, {140}},                // Pole 127
+    {1, {141}},                // Pole 128
+    {2, {153, 154}},           // Pole 129
+    {1, {152}},                // Pole 130
+    {0, {}},                   // Pole 131
+    {1, {21}},                 // Pole 132
+    {1, {20}},                 // Pole 133
+    {1, {19}},                 // Pole 134
+    {1, {16}},                 // Pole 135
+    {1, {15}},                 // Pole 136
+    {0, {}},                   // Pole 137
+    {1, {31}},                 // Pole 138
+    {2, {32, 33}},             // Pole 139
+    {2, {232, 233}},           // Pole 140
+    {1, {212}},                // Pole 141
+    {1, {214}},                // Pole 142
+    {1, {215}},                // Pole 143
+    {1, {216}},                // Pole 144
+    {0, {}},                   // Pole 145
+    {1, {192}},                // Pole 146
+    {0, {}},                   // Pole 147
+    {1, {190}},                // Pole 148
+    {1, {188}},                // Pole 149
+    {1, {71}},                 // Pole 150
+    {1, {72}},                 // Pole 151
+    {2, {73, 74}},             // Pole 152
+    {1, {76}},                 // Pole 153
+    {1, {108}},                // Pole 154
+    {1, {107}},                // Pole 155
+    {0, {}},                   // Pole 156
+    {1, {96}},                 // Pole 157
+    {1, {97}},                 // Pole 158
+    {2, {97, 98}},             // Pole 159
+    {1, {98}},                 // Pole 160
+    {2, {99, 100}},            // Pole 161
+    {0, {}},                   // Pole 162
+    {0, {}},                   // Pole 163
+    {1, {122}},                // Pole 164
+    {1, {121}},                // Pole 165
+    {0, {}},                   // Pole 166
+    {0, {}},                   // Pole 167
+    {1, {170}},                // Pole 168
+    {2, {171, 172}},           // Pole 169
+    {1, {173}},                // Pole 170
+    {2, {174, 175}},           // Pole 171
+    {1, {176}},                // Pole 172
+    {1, {177}},                // Pole 173
+    {1, {178}},                // Pole 174
+    {1, {217}},                // Pole 175
+    {0, {}},                   // Pole 176
+    {1, {194}},                // Pole 177
+    {0, {}},                   // Pole 178
+    {1, {196}},                // Pole 179
+    {1, {197}},                // Pole 180
+    {0, {}},                   // Pole 181
+    {0, {}},                   // Pole 182
+    {2, {201, 202}},           // Pole 183
+    {1, {203}},                // Pole 184
+    {2, {40, 41}},             // Pole 185
+    {1, {39}},                 // Pole 186
+    {1, {38}},                 // Pole 187
+    {1, {37}},                 // Pole 188
+    {1, {36}},                 // Pole 189
+    {1, {35}},                 // Pole 190
+    {1, {34}}                  // Pole 191
+};
+
+// Append the LED indices that should glow purple (player & passenger spawns:
+// roadState 3 and 4) to `frame` as ",<led>" tokens.
+static void appendPurpleLeds(string& frame) {
+    for (int f = 0; f < ROAD_SIZE; f++) {
+        if (roadState[f] == 3 || roadState[f] == 4) {
+            const FieldLeds& fl = boardFields[f];
+            for (int j = 0; j < fl.count; j++) {
+                frame += ',';
+                frame += to_string(fl.leds[j]);
+            }
+        }
+    }
+}
 
 void initCSV() {
     ofstream outFile("BoardState.csv", ios::trunc); // 'trunc' deletes old content
@@ -75,12 +292,16 @@ void sendToArduino() {
         cout << "[!] Arduino not connected on port " << ARDUINO_PORT << "!" << endl;
         return;
     }
-    char buf[12];
-    int i = 0;
+    // 12 zone states (background colors) followed by the purple-LED indices
+    // (player & passenger spawns), comma-separated, terminated by '\n'.
+    // e.g. "001020010200,8,61,62\n"
+    string frame;
     for (char z = 'A'; z <= 'L'; z++) {
-        buf[i++] = '0' + getCurrentZoneState(z); // send the state as an ASCII digit
+        frame += char('0' + getCurrentZoneState(z));
     }
-    write(g_arduinoFd, buf, sizeof(buf));
+    appendPurpleLeds(frame);
+    frame += '\n';
+    write(g_arduinoFd, frame.c_str(), frame.size());
     tcdrain(g_arduinoFd); // block until the bytes are physically sent
 }
 
@@ -98,10 +319,14 @@ void initArduino() {}
 void sendToArduino() {
     ofstream arduino(ARDUINO_PORT);
     if (arduino.is_open()) {
+        // 12 zone states + comma-separated purple-LED indices + '\n'.
+        string frame;
         for (char z = 'A'; z <= 'L'; z++) {
-            int state = getCurrentZoneState(z);
-            arduino << state;
+            frame += char('0' + getCurrentZoneState(z));
         }
+        appendPurpleLeds(frame);
+        frame += '\n';
+        arduino << frame;
         arduino.close();
     } else {
         cout << "[!] Cannot connect to Arduino on port " << ARDUINO_PORT << "!" << endl;

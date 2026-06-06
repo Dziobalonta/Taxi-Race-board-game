@@ -4,7 +4,7 @@
 
 const int PLAYERS_COUNT = 4;
 const int ROAD_SIZE = 191;
-const int PASSENGERS_AMOUNT = 21;
+const int PASSENGERS_AMOUNT = 44;
 
 struct PassengerCard {
     int cardID;
@@ -35,6 +35,7 @@ extern bool useArduino;
 extern std::vector<int> mapGraph[ROAD_SIZE];
 extern const std::vector<int> DESTINATIONS;
 extern const std::vector<int> EVENTS;
+extern const std::vector<int> SPAWN_POSITIONS; // valid passenger spawn fields (1-based)
 
 extern int roadState[ROAD_SIZE];
 extern char trafficZones[ROAD_SIZE];

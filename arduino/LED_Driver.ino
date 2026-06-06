@@ -76,23 +76,37 @@ void setup() {
 }
 
 void loop() {
-    if (Serial.available() >= 12) { // Czekamy na równe 12 znaków (strefy A-L)
-        
-        for (int i = 0; i < 12; i++) {
-            char incomingByte = Serial.read(); // Czytamy jedną cyfrę
-            int trafficState = incomingByte - '0'; // Zamiana '0' na liczbę 0
-            
-            // Zamiana cyfry na kolor (0=Zielony, 1=Żółty, 2=Czerwony)
-            CRGB newColor = CRGB::Green;
-            if (trafficState == 1) newColor = CRGB::Yellow;
-            if (trafficState == 2) newColor = CRGB::Red;
-            
-            // Kolorujemy strefę (i to numer strefy: 0=A, 1=B, itd.)
-            
-            colorZone((Zone)i, newColor);
-        }
-        
-        // Wyświetlamy nowe kolory na pasku LED
-        FastLED.show();
+    if (Serial.available() <= 0) return;
+
+    // Cała ramka: 12 cyfr stref + opcjonalne indeksy LED (fiolet) po przecinku,
+    // zakończona '\n'. Np.: "001020010200,8,61,62"
+    static char frame[256];
+    int len = Serial.readBytesUntil('\n', frame, sizeof(frame) - 1);
+    if (len < 12) return; // potrzebujemy przynajmniej 12 cyfr stref
+
+    // --- WARSTWA 1: STREFY (TŁO) ---
+    for (int i = 0; i < 12; i++) {
+        int trafficState = frame[i] - '0';
+        CRGB newColor = CRGB::Green;            // 0 = zielony
+        if (trafficState == 1) newColor = CRGB::Yellow;
+        else if (trafficState == 2) newColor = CRGB::Red;
+        colorZone((Zone)i, newColor);
     }
+
+    // --- WARSTWA 2: PUNKTY SPAWNU (FIOLET) ---
+    // Reszta ramki to indeksy LED (gracze + pasażerowie) rozdzielone przecinkami.
+    for (int i = 12; i < len; ) {
+        if (frame[i] < '0' || frame[i] > '9') { i++; continue; }
+        int ledNum = 0;
+        while (i < len && frame[i] >= '0' && frame[i] <= '9') {
+            ledNum = ledNum * 10 + (frame[i] - '0');
+            i++;
+        }
+        int ledIndex = ledNum - 1; // 1-234 -> 0-233
+        if (ledIndex >= 0 && ledIndex < NUM_LEDS) {
+            leds[ledIndex] = CRGB::Purple;
+        }
+    }
+
+    FastLED.show();
 }

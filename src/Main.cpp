@@ -15,13 +15,15 @@ using namespace std;
 
 int main() {
     srand(time(NULL)); 
+    if (useArduino) initArduino();
+
+    sleep(1);
     initGame();
     initZones();
     initGraph();     
     // printGraph();
     initPassengers();
     initCSV();
-    if (useArduino) initArduino();
 
     int currentRound = 1;
     bool gameRunning = true;

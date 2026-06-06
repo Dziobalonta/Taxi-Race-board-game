@@ -30,7 +30,30 @@ void initPassengers() {
         DESTINATIONS[17], // Card 18
         DESTINATIONS[0],  // Card 19 (duplicate)
         DESTINATIONS[1],  // Card 20 (duplicate)
-        DESTINATIONS[2]   // Card 21 (duplicate)
+        DESTINATIONS[2],  // Card 21 (duplicate)
+        DESTINATIONS[3],  // Card 22 (duplicate)
+        DESTINATIONS[4],  // Card 23 (duplicate) 
+        DESTINATIONS[5],  // Card 24 (duplicate)
+        DESTINATIONS[6],  // Card 25 (duplicate)
+        DESTINATIONS[7],  // Card 26 (duplicate)
+        DESTINATIONS[8],  // Card 27 (duplicate)
+        DESTINATIONS[9],  // Card 28 (duplicate)
+        DESTINATIONS[10], // Card 29 (duplicate)
+        DESTINATIONS[11], // Card 30 (duplicate)
+        DESTINATIONS[12], // Card 31 (duplicate)
+        DESTINATIONS[13], // Card 32 (duplicate)
+        DESTINATIONS[14], // Card 33 (duplicate)
+        DESTINATIONS[15], // Card 34 (duplicate)
+        DESTINATIONS[16], // Card 35 (duplicate)
+        DESTINATIONS[17], // Card 36 (duplicate)
+        DESTINATIONS[0],  // Card 37 (duplicate)
+        DESTINATIONS[1],  // Card 38 (duplicate)
+        DESTINATIONS[2],  // Card 39 (duplicate)
+        DESTINATIONS[3],  // Card 40 (duplicate)
+        DESTINATIONS[4],  // Card 41 (duplicate)
+        DESTINATIONS[5],  // Card 42 (duplicate)
+        DESTINATIONS[6],  // Card 43 (duplicate)
+        DESTINATIONS[7]   // Card 44 (duplicate)
     };
 
     for(int i = 0; i < PASSENGERS_AMOUNT; i++) {
@@ -79,10 +102,10 @@ void spawnPassengers(int currentRound) {
             int spawnPos;
             bool validPos = false;
             
-            // Find field to spawn a passenger
+            // Find field to spawn a passenger (only from the allowed spawn fields)
             do {
-                spawnPos = rand() % ROAD_SIZE;
-                
+                spawnPos = SPAWN_POSITIONS[rand() % SPAWN_POSITIONS.size()] - 1; // 1-based -> 0-based
+
                 // check if there are no other spawnpoints for smth
                 if (roadState[spawnPos] == 0  || roadState[spawnPos] == 1 || roadState[spawnPos] == 2) {
                     validPos = true;
