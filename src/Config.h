@@ -24,6 +24,14 @@ struct ActiveEvent {
 
 extern bool useArduino;
 
+// Serial port the Arduino is connected to. On Windows this is "COM3" etc.;
+// on macOS find it with: find /dev -maxdepth 1 -name 'cu.usbmodem*'
+#ifdef _WIN32
+    #define ARDUINO_PORT "COM3"
+#else
+    #define ARDUINO_PORT "/dev/cu.usbmodem11101"
+#endif
+
 extern std::vector<int> mapGraph[ROAD_SIZE];
 extern const std::vector<int> DESTINATIONS;
 extern const std::vector<int> EVENTS;

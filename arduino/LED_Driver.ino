@@ -1,6 +1,6 @@
 #include <FastLED.h>
 
-#define LED_PIN     6          // Zmień na numer pinu, do którego podpięty jest pasek
+#define LED_PIN     5          // Zmień na numer pinu, do którego podpięty jest pasek
 #define NUM_LEDS    234        // Całkowita liczba LED-ów na pasku (zaktualizowana do Twojej mapy)
 #define LED_TYPE    WS2812B    // Zmień typ, jeśli masz np. WS2811 lub SK6812
 #define COLOR_ORDER GRB        // Kolejność kolorów (najczęściej GRB dla WS2812B)
@@ -88,6 +88,7 @@ void loop() {
             if (trafficState == 2) newColor = CRGB::Red;
             
             // Kolorujemy strefę (i to numer strefy: 0=A, 1=B, itd.)
+            
             colorZone((Zone)i, newColor);
         }
         

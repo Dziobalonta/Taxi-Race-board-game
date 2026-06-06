@@ -6,7 +6,7 @@
 #include "IOManager.h"
 
 #include <iostream>
-#include <conio.h>
+#include "conio_compat.h"
 #include <cstdlib>
 #include <ctime>
 #include <string>
@@ -21,11 +21,12 @@ int main() {
     // printGraph();
     initPassengers();
     initCSV();
+    if (useArduino) initArduino();
 
     int currentRound = 1;
     bool gameRunning = true;
 
-    system("cls");
+    system(CLEAR_SCREEN);
 
     cout << "--- GAME STARTED ---" << endl;
     cout << "----- ROUND 1 -----" << endl;
@@ -106,7 +107,7 @@ int main() {
 
         // NEW ROUND
         currentRound++;
-        system("cls");
+        system(CLEAR_SCREEN);
 
         cout << "--- GAME RUNNING ---" << endl;
         cout << "----- ROUND " << currentRound <<" -----" << endl;
@@ -132,6 +133,8 @@ int main() {
             sendToArduino();
         }
     }
-    
+
+    if (useArduino) closeArduino();
+
     return 0;
 }
