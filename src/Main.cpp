@@ -15,7 +15,6 @@ using namespace std;
 
 int main() {
     srand(time(NULL)); 
-    if (useArduino) initArduino();
 
     sleep(1);
     initGame();
@@ -44,7 +43,7 @@ int main() {
     updateTraffic(currentRound);
     spawnPassengers(currentRound);
     SaveRoadStateToFile();
-
+    if (useArduino) initArduino();
     // THE CLI MENU
     while (gameRunning) {
         cout << "\n--------------------" << endl;
