@@ -43,7 +43,10 @@ int main() {
     updateTraffic(currentRound);
     spawnPassengers(currentRound);
     SaveRoadStateToFile();
-    if (useArduino) initArduino();
+    if (useArduino) {
+        initArduino();
+        sendToArduino();
+    }
     // THE CLI MENU
     while (gameRunning) {
         cout << "\n--------------------" << endl;

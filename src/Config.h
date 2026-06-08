@@ -29,7 +29,7 @@ extern bool useArduino;
 #ifdef _WIN32
     #define ARDUINO_PORT "COM3"
 #else
-    #define ARDUINO_PORT "/dev/cu.usbmodem11101"
+    #define ARDUINO_PORT "/dev/cu.usbmodem1101"
 #endif
 
 extern std::vector<int> mapGraph[ROAD_SIZE];

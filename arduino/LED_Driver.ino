@@ -62,6 +62,24 @@ void colorZone(Zone zone, CRGB color) {
     }
 }
 
+// --- Stan migających punktów spawnu (białe) ---
+#define MAX_SPAWNS     32   // max. liczba migających LED-ów
+#define BLINK_INTERVAL 400  // ms - co ile przełączamy biały <-> tło
+
+uint8_t       spawnLeds[MAX_SPAWNS];   // indeksy LED (0-based) do migania
+CRGB          spawnUnder[MAX_SPAWNS];  // kolor strefy pod spotem (faza "off")
+uint8_t       spawnCount = 0;
+bool          blinkOn    = true;
+unsigned long lastBlink  = 0;
+
+// Nakłada bieżącą fazę migania na pasek (biały albo kolor tła pod spotem).
+void renderSpawns() {
+    for (uint8_t k = 0; k < spawnCount; k++) {
+        leds[spawnLeds[k]] = blinkOn ? CRGB::White : spawnUnder[k];
+    }
+    FastLED.show();
+}
+
 void setup() {
 // Inicjalizacja paska LED
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -76,37 +94,51 @@ void setup() {
 }
 
 void loop() {
-    if (Serial.available() <= 0) return;
+    unsigned long now = millis();
 
-    // Cała ramka: 12 cyfr stref + opcjonalne indeksy LED (fiolet) po przecinku,
-    // zakończona '\n'. Np.: "001020010200,8,61,62"
-    static char frame[256];
-    int len = Serial.readBytesUntil('\n', frame, sizeof(frame) - 1);
-    if (len < 12) return; // potrzebujemy przynajmniej 12 cyfr stref
+    // --- 1. Odbiór nowej ramki (jeśli jest) ---
+    if (Serial.available() > 0) {
+        // Cała ramka: 12 cyfr stref + opcjonalne indeksy LED po przecinku,
+        // zakończona '\n'. Np.: "001020010200,8,61,62"
+        static char frame[256];
+        int len = Serial.readBytesUntil('\n', frame, sizeof(frame) - 1);
 
-    // --- WARSTWA 1: STREFY (TŁO) ---
-    for (int i = 0; i < 12; i++) {
-        int trafficState = frame[i] - '0';
-        CRGB newColor = CRGB::Green;            // 0 = zielony
-        if (trafficState == 1) newColor = CRGB::Yellow;
-        else if (trafficState == 2) newColor = CRGB::Red;
-        colorZone((Zone)i, newColor);
+        if (len >= 12) { // potrzebujemy przynajmniej 12 cyfr stref
+            // --- WARSTWA 1: STREFY (TŁO) ---
+            for (int i = 0; i < 12; i++) {
+                int trafficState = frame[i] - '0';
+                CRGB newColor = CRGB::Green;            // 0 = zielony
+                if (trafficState == 1) newColor = CRGB::Yellow;
+                else if (trafficState == 2) newColor = CRGB::Red;
+                colorZone((Zone)i, newColor);
+            }
+
+            // --- WARSTWA 2: PUNKTY SPAWNU ---
+            // Zapamiętujemy indeksy LED oraz kolor tła pod nimi (do migania).
+            spawnCount = 0;
+            for (int i = 12; i < len; ) {
+                if (frame[i] < '0' || frame[i] > '9') { i++; continue; }
+                int ledNum = 0;
+                while (i < len && frame[i] >= '0' && frame[i] <= '9') {
+                    ledNum = ledNum * 10 + (frame[i] - '0');
+                    i++;
+                }
+                int ledIndex = ledNum - 1; // 1-234 -> 0-233
+                if (ledIndex >= 0 && ledIndex < NUM_LEDS && spawnCount < MAX_SPAWNS) {
+                    spawnLeds[spawnCount]  = ledIndex;
+                    spawnUnder[spawnCount] = leds[ledIndex]; // kolor strefy pod spotem
+                    spawnCount++;
+                }
+            }
+
+            renderSpawns(); // od razu pokaż nową klatkę
+        }
     }
 
-    // --- WARSTWA 2: PUNKTY SPAWNU (FIOLET) ---
-    // Reszta ramki to indeksy LED (gracze + pasażerowie) rozdzielone przecinkami.
-    for (int i = 12; i < len; ) {
-        if (frame[i] < '0' || frame[i] > '9') { i++; continue; }
-        int ledNum = 0;
-        while (i < len && frame[i] >= '0' && frame[i] <= '9') {
-            ledNum = ledNum * 10 + (frame[i] - '0');
-            i++;
-        }
-        int ledIndex = ledNum - 1; // 1-234 -> 0-233
-        if (ledIndex >= 0 && ledIndex < NUM_LEDS) {
-            leds[ledIndex] = CRGB::Purple;
-        }
+    // --- 2. Miganie spotów na biało ---
+    if (now - lastBlink >= BLINK_INTERVAL) {
+        lastBlink = now;
+        blinkOn = !blinkOn;
+        renderSpawns();
     }
-
-    FastLED.show();
 }
