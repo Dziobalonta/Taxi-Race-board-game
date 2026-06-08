@@ -216,11 +216,11 @@ static const FieldLeds boardFields[ROAD_SIZE] = {
     {1, {34}}                  // Pole 191
 };
 
-// Append the LED indices that should glow purple (player & passenger spawns:
-// roadState 3 and 4) to `frame` as ",<led>" tokens.
-static void appendPurpleLeds(string& frame) {
+// Append the LED indices of every field whose roadState is s1 or s2 to `frame`
+// as ",<led>" tokens. Pass s2 = -1 to match a single state.
+static void appendLedsForStates(string& frame, int s1, int s2) {
     for (int f = 0; f < ROAD_SIZE; f++) {
-        if (roadState[f] == 3 || roadState[f] == 4) {
+        if (roadState[f] == s1 || (s2 >= 0 && roadState[f] == s2)) {
             const FieldLeds& fl = boardFields[f];
             for (int j = 0; j < fl.count; j++) {
                 frame += ',';
@@ -292,14 +292,17 @@ void sendToArduino() {
         cout << "[!] Arduino not connected on port " << ARDUINO_PORT << "!" << endl;
         return;
     }
-    // 12 zone states (background colors) followed by the purple-LED indices
-    // (player & passenger spawns), comma-separated, terminated by '\n'.
-    // e.g. "001020010200,8,61,62\n"
+    // Frame: 12 zone states + spawn-LED indices + ';' + barrier-LED indices + '\n'
+    // e.g. "001020010200,8,61,62;45,90\n"
+    //  - spawns (roadState 3/4) -> blinking white on the board
+    //  - barriers (roadState 5) -> solid color on the board
     string frame;
     for (char z = 'A'; z <= 'L'; z++) {
         frame += char('0' + getCurrentZoneState(z));
     }
-    appendPurpleLeds(frame);
+    appendLedsForStates(frame, 3, 4); // spawns
+    frame += ';';
+    appendLedsForStates(frame, 5, -1); // barriers
     frame += '\n';
     write(g_arduinoFd, frame.c_str(), frame.size());
     tcdrain(g_arduinoFd); // block until the bytes are physically sent
@@ -319,12 +322,14 @@ void initArduino() {}
 void sendToArduino() {
     ofstream arduino(ARDUINO_PORT);
     if (arduino.is_open()) {
-        // 12 zone states + comma-separated purple-LED indices + '\n'.
+        // 12 zone states + spawn LEDs + ';' + barrier LEDs + '\n'.
         string frame;
         for (char z = 'A'; z <= 'L'; z++) {
             frame += char('0' + getCurrentZoneState(z));
         }
-        appendPurpleLeds(frame);
+        appendLedsForStates(frame, 3, 4); // spawns
+        frame += ';';
+        appendLedsForStates(frame, 5, -1); // barriers
         frame += '\n';
         arduino << frame;
         arduino.close();

@@ -111,7 +111,6 @@ int main() {
 
         // NEW ROUND
         currentRound++;
-        system(CLEAR_SCREEN);
 
         cout << "--- GAME RUNNING ---" << endl;
         cout << "----- ROUND " << currentRound <<" -----" << endl;

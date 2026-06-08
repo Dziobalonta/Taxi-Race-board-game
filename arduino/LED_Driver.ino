@@ -63,8 +63,9 @@ void colorZone(Zone zone, CRGB color) {
 }
 
 // --- Stan migających punktów spawnu (białe) ---
-#define MAX_SPAWNS     32   // max. liczba migających LED-ów
-#define BLINK_INTERVAL 400  // ms - co ile przełączamy biały <-> tło
+#define MAX_SPAWNS     32          // max. liczba migających LED-ów
+#define BLINK_INTERVAL 400         // ms - co ile przełączamy biały <-> tło
+#define BARRIER_COLOR  CRGB::Blue  // stały kolor barier (stan 5)
 
 uint8_t       spawnLeds[MAX_SPAWNS];   // indeksy LED (0-based) do migania
 CRGB          spawnUnder[MAX_SPAWNS];  // kolor strefy pod spotem (faza "off")
@@ -113,13 +114,20 @@ void loop() {
                 colorZone((Zone)i, newColor);
             }
 
-            // --- WARSTWA 2: PUNKTY SPAWNU ---
-            // Zapamiętujemy indeksy LED oraz kolor tła pod nimi (do migania).
+            // Separator ';' oddziela spoty (spawny) od barier:
+            //   "<strefy>,<spawny...>;<bariery...>"
+            int sep = len;
+            for (int i = 12; i < len; i++) {
+                if (frame[i] == ';') { sep = i; break; }
+            }
+
+            // --- WARSTWA 2: PUNKTY SPAWNU (biały, migają) ---
+            // Indeksy LED w [12, sep). Zapamiętujemy je i kolor tła pod nimi.
             spawnCount = 0;
-            for (int i = 12; i < len; ) {
+            for (int i = 12; i < sep; ) {
                 if (frame[i] < '0' || frame[i] > '9') { i++; continue; }
                 int ledNum = 0;
-                while (i < len && frame[i] >= '0' && frame[i] <= '9') {
+                while (i < sep && frame[i] >= '0' && frame[i] <= '9') {
                     ledNum = ledNum * 10 + (frame[i] - '0');
                     i++;
                 }
@@ -128,6 +136,21 @@ void loop() {
                     spawnLeds[spawnCount]  = ledIndex;
                     spawnUnder[spawnCount] = leds[ledIndex]; // kolor strefy pod spotem
                     spawnCount++;
+                }
+            }
+
+            // --- WARSTWA 3: BARIERY (stały kolor, nie migają) ---
+            // Indeksy LED po ';'. Znikają same, gdy program przestanie je wysyłać.
+            for (int i = sep + 1; i < len; ) {
+                if (frame[i] < '0' || frame[i] > '9') { i++; continue; }
+                int ledNum = 0;
+                while (i < len && frame[i] >= '0' && frame[i] <= '9') {
+                    ledNum = ledNum * 10 + (frame[i] - '0');
+                    i++;
+                }
+                int ledIndex = ledNum - 1;
+                if (ledIndex >= 0 && ledIndex < NUM_LEDS) {
+                    leds[ledIndex] = BARRIER_COLOR;
                 }
             }
 
