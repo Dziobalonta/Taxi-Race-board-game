@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk grep *)",
+      "Bash(g++ -std=c++17 *.cpp -o program)",
+      "Bash(rtk find *)",
+      "Bash(rtk read *)"
+    ]
+  }
+}
